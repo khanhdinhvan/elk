@@ -1,0 +1,11 @@
+version: '3.2'
+services:
+  services_2:
+    # run `./mvnw clean package` before
+    build: .
+    container_name : services_2
+    ports:
+      - 8081:8080
+
+
+

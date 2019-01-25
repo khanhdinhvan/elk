@@ -1,0 +1,36 @@
+# filebeat.yml
+filebeat.prospectors:
+- type: docker
+  paths:
+   - '/var/lib/docker/containers/*/*.log'
+  containers.ids: '*'
+
+processors:
+  - decode_json_fields:
+      fields: ["message"]
+      target: ""
+      overwrite_keys: true
+  - add_docker_metadata: ~
+  - drop_event:
+            when:
+              equals:
+                docker.container.name: "filebeat"
+  - drop_event:
+            when:
+              equals:
+                docker.container.name: "kibana"
+  - drop_event:
+            when:
+              equals:
+                docker.container.name: "elasticsearch"
+  - drop_event:
+            when:
+              equals:
+                docker.container.name: "logstash"             
+
+output.logstash:
+  hosts: ["logstash:5044"]
+  timeout: 15
+
+logging.to_files: true
+logging.to_syslog: false

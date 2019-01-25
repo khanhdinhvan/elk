@@ -1,0 +1,60 @@
+version: '3.2'
+services:
+ 
+  filebeat:
+    build: ./filebeat
+    container_name : beat
+    user: root
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - es
+    depends_on:
+      - logstash
+      
+  kibana:
+    image: docker.elastic.co/kibana/kibana:6.1.1
+    container_name : kibana
+    ports:
+      - 5601:5601
+    environment:
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+    networks:
+      - es
+    depends_on:
+      - elasticsearch
+      
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.1.1
+    container_name: elasticsearch
+    environment:
+      - cluster.name=docker-cluster
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "network.host=0.0.0.0"
+      - "discovery.zen.minimum_master_nodes=1"
+      - "discovery.type=single-node"
+    ports:
+      - 9200:9200
+    networks:
+      - es
+  logstash:
+    image: docker.elastic.co/logstash/logstash:6.1.1
+    container_name: logstash
+    depends_on:
+    - elasticsearch
+    ports:
+    - 5044:5044
+    - 5043:5044
+    volumes:
+    - ./logstash/logstash.conf:/config/logstash.conf
+    networks:
+    - es
+    command: ["logstash", "--verbose", "-f", "/config/logstash.conf"]
+    
+volumes:
+  esdata:
+    driver: local
+
+networks:
+  es:
