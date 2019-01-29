@@ -1,10 +1,10 @@
-##version:Chỉ ra phiên bản docker-compose sẽ sử dụng.
+#version:Chỉ ra phiên bản docker-compose sẽ sử dụng.
 version: '3.2'
-##services:chỉ ra những services (containers) mà ta sẽ cài đặt.
+#services:chỉ ra những services (containers) mà ta sẽ cài đặt.
 services:
  
   filebeat:
-    ##build:Directive này có thể được sử dụng thay directive image. Chỉ ra vị trí của Dockerfile để build container
+    #build:Directive này có thể được sử dụng thay directive image. Chỉ ra vị trí của Dockerfile để build container
     build: ./filebeat
     container_name : beat
     user: root
@@ -17,25 +17,31 @@ services:
       - logstash
       
   kibana:
-    ##image:chỉ ra image sẽ được sử dụng để create containers
-    image: docker.elastic.co/kibana/kibana:6.3.0
-    ##container_name : đặt tên cho container
+    #image:chỉ ra image sẽ được sử dụng để create containers
+    image: docker.elastic.co/kibana/kibana:6.1.1
+    #container_name : đặt tên cho container
     container_name : kibana
-    ##ports: Forwards the exposed port 5601(bên phải) của container sang port 5601(bên trái) trên host machine. Định dạng khai báo port host:container
+    #ports: Forwards the exposed port 5601(bên phải) của container sang port 5601(bên trái) trên host machine. Định dạng khai báo port host:container
     ports:
       - 5601:5601
-    ##volumes:
-    ##  - ./kibana/config/:/usr/share/kibana/config:ro
-    ##networks: để khai báo cho các service trong compose file để các container có thể giao tiếp với nhau
+    volumes:
+      - ./kibana/config/:/usr/share/kibana/config:ro
+    #networks: để khai báo cho các service trong compose file để các container có thể giao tiếp với nhau
     networks:
       - es
-    ##depends_on: elasticsearch: Chỉ ra sự phụ thuộc của services kibana với services elasticsearch.  Tức là services elasticsearch phải chạy và tạo ra trước, thì services kibana mới chạy.
+    #depends_on: elasticsearch: Chỉ ra sự phụ thuộc của services kibana với services elasticsearch.  Tức là services elasticsearch phải chạy và tạo ra trước, thì services kibana mới chạy.
     depends_on:
       - elasticsearch
       
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:6.3.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.1.1
     container_name: elasticsearch
+    environment:
+      - cluster.name=docker-cluster
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "network.host=0.0.0.0"
+      - "discovery.zen.minimum_master_nodes=1"
+      - "discovery.type=single-node"
     ports:
       - 9200:9200
       - 9300:9300
@@ -43,19 +49,23 @@ services:
       - es
       
   logstash:
-    image: docker.elastic.co/logstash/logstash:6.3.0
+    image: docker.elastic.co/logstash/logstash:6.1.1
     container_name: logstash
     depends_on:
     - elasticsearch
     ports:
       - 5044:5044
       - 5043:5043
-    ##volumes: mount thư mục ./logstash/logstash.conf trên host (cùng thư mục cha chứa file docker-compose) với thư mục /config/logstash.conf trong container.
+    #volumes: mount thư mục ./logstash/logstash.conf trên host (cùng thư mục cha chứa file docker-compose) với thư mục /config/logstash.conf trong container.
     volumes:
       - ./logstash/logstash.conf:/config/logstash.conf
     networks:
       - es
-    command: logstash -f logstash.conf
+    command: ["logstash", "--verbose", "-f", "/config/logstash.conf"]
     
+volumes:
+  esdata:
+    driver: local
+
 networks:
   es:
