@@ -6,6 +6,3 @@ services:
     container_name : services_2
     ports:
       - 8081:8080
-
-
-

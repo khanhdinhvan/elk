@@ -11,8 +11,6 @@ services:
     volumes:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock
-    networks:
-      - es
     depends_on:
       - logstash
       
@@ -26,9 +24,6 @@ services:
       - 5601:5601
     volumes:
       - ./kibana/config/:/usr/share/kibana/config:ro
-    #networks: để khai báo cho các service trong compose file để các container có thể giao tiếp với nhau
-    networks:
-      - es
     #depends_on: elasticsearch: Chỉ ra sự phụ thuộc của services kibana với services elasticsearch.  Tức là services elasticsearch phải chạy và tạo ra trước, thì services kibana mới chạy.
     depends_on:
       - elasticsearch
@@ -45,9 +40,7 @@ services:
     ports:
       - 9200:9200
       - 9300:9300
-    networks:
-      - es
-      
+
   logstash:
     image: docker.elastic.co/logstash/logstash:6.1.1
     container_name: logstash
@@ -59,13 +52,4 @@ services:
     #volumes: mount thư mục ./logstash/logstash.conf trên host (cùng thư mục cha chứa file docker-compose) với thư mục /config/logstash.conf trong container.
     volumes:
       - ./logstash/logstash.conf:/config/logstash.conf
-    networks:
-      - es
     command: ["logstash", "--verbose", "-f", "/config/logstash.conf"]
-    
-volumes:
-  esdata:
-    driver: local
-
-networks:
-  es:
